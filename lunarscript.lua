@@ -10,10 +10,14 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
-local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
-Junkie.service = "LunarScripts"
-Junkie.identifier = "1158259"
-Junkie.provider = "LunarScripts"
+local Junkie
+local ok, j = pcall(function() return loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))() end)
+if ok and j then Junkie = j end
+if Junkie then
+    Junkie.service = "LunarScripts"
+    Junkie.identifier = "1158259"
+    Junkie.provider = "LunarScripts"
+end
 
 local LocalPlayer = Players.LocalPlayer
 local LoaderGui = nil
@@ -599,11 +603,6 @@ local function OpenUniversalHub()
             if hum then hum.JumpPower = v end
         end)
     end)
-end
-                end)
-            end
-        end)
-    end
 end
 
 ------------------------------------------------------------
