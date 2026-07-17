@@ -288,24 +288,33 @@ local function StartFly()
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hrp or not hum then UniActive.fly = false return end
 
-    local oldGrav = workspace.Gravity
     local oldAutoRotate = hum.AutoRotate
-    workspace.Gravity = 0
     hum.AutoRotate = false
-    hum.WalkSpeed = 0
-    hum.JumpHeight = 0
 
-    FlyConn = RunService.Heartbeat:Connect(function(dt)
+    local flyPart = Instance.new("Part")
+    flyPart.Size = Vector3.new(0.5, 0.5, 0.5)
+    flyPart.Transparency = 1
+    flyPart.Anchored = true
+    flyPart.CanCollide = false
+    flyPart.Parent = workspace
+
+    local weld = Instance.new("Weld")
+    weld.Name = "FlyWeld"
+    weld.Part0 = hrp
+    weld.Part1 = flyPart
+    weld.C0 = CFrame.new()
+    weld.Parent = hrp
+
+    FlyConn = RunService.Heartbeat:Connect(function()
         if not UniActive.fly then
-            workspace.Gravity = oldGrav
+            pcall(function() flyPart:Destroy() end)
+            pcall(function() weld:Destroy() end)
             pcall(function()
                 local c = LocalPlayer.Character
                 if c then
                     local h = c:FindFirstChildOfClass("Humanoid")
                     if h then
                         h.AutoRotate = oldAutoRotate
-                        h.WalkSpeed = DesiredWalkSpeed
-                        h.JumpHeight = 16
                     end
                 end
             end)
@@ -316,8 +325,7 @@ local function StartFly()
         local char = LocalPlayer.Character
         if not char then StopFly() return end
         local hrp = char:FindFirstChild("HumanoidRootPart")
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hrp or not hum then StopFly() return end
+        if not hrp then StopFly() return end
 
         local cam = workspace.CurrentCamera
         local cf = cam.CFrame
@@ -330,12 +338,11 @@ local function StartFly()
         if UserInputService:GetKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
         if UserInputService:GetKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
 
+        local targetPos = flyPart.Position
         if dir.Magnitude > 0 then
-            hrp.AssemblyLinearVelocity = dir.Unit * FlySpeed
-        else
-            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            targetPos = targetPos + dir.Unit * FlySpeed * 0.016
         end
-        hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + cf.LookVector)
+        flyPart.CFrame = CFrame.new(targetPos, targetPos + cf.LookVector)
     end)
 end
 
