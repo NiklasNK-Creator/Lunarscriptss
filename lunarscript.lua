@@ -288,12 +288,28 @@ local function StartFly()
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hrp or not hum then UniActive.fly = false return end
 
+    local oldGrav = workspace.Gravity
+    workspace.Gravity = 0
     hum.PlatformStand = true
 
-    local lastPos = hrp.Position
+    local bg = Instance.new("BodyGyro")
+    bg.P = 9e4
+    bg.D = 500
+    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.CFrame = hrp.CFrame
+    bg.Parent = hrp
 
-    FlyConn = RunService.RenderStepped:Connect(function(dt)
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.P = 1e4
+    bv.Parent = hrp
+
+    FlyConn = RunService.RenderStepped:Connect(function()
         if not UniActive.fly then
+            pcall(function() bg:Destroy() end)
+            pcall(function() bv:Destroy() end)
+            workspace.Gravity = oldGrav
             pcall(function()
                 local c = LocalPlayer.Character
                 if c then
@@ -321,12 +337,12 @@ local function StartFly()
         if UserInputService:GetKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
         if UserInputService:GetKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
 
-        local targetPos = hrp.Position
         if dir.Magnitude > 0 then
-            targetPos = targetPos + dir.Unit * FlySpeed * dt
+            bv.Velocity = dir.Unit * FlySpeed
+        else
+            bv.Velocity = Vector3.new(0, 0, 0)
         end
-        hrp.Velocity = Vector3.new(0, 0, 0)
-        hrp.CFrame = CFrame.new(targetPos, targetPos + cf.LookVector)
+        bg.CFrame = CFrame.new(hrp.Position, hrp.Position + cf.LookVector)
     end)
 end
 
@@ -562,7 +578,7 @@ local function OpenUniversalHub()
 
     if not WalkSpeedConn then
         WalkSpeedConn = task.spawn(function()
-            while task.wait(0.5) do
+            while task.wait(0.01) do
                 pcall(function()
                     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
                     if hum then
