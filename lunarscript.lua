@@ -289,32 +289,24 @@ local function StartFly()
     if not hrp or not hum then UniActive.fly = false return end
 
     local oldGrav = workspace.Gravity
+    local oldAutoRotate = hum.AutoRotate
     workspace.Gravity = 0
-    hum.PlatformStand = true
+    hum.AutoRotate = false
+    hum.WalkSpeed = 0
+    hum.JumpHeight = 0
 
-    local bg = Instance.new("BodyGyro")
-    bg.P = 9e4
-    bg.D = 500
-    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bg.CFrame = hrp.CFrame
-    bg.Parent = hrp
-
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Velocity = Vector3.new(0, 0, 0)
-    bv.P = 1e4
-    bv.Parent = hrp
-
-    FlyConn = RunService.RenderStepped:Connect(function()
+    FlyConn = RunService.Heartbeat:Connect(function(dt)
         if not UniActive.fly then
-            pcall(function() bg:Destroy() end)
-            pcall(function() bv:Destroy() end)
             workspace.Gravity = oldGrav
             pcall(function()
                 local c = LocalPlayer.Character
                 if c then
                     local h = c:FindFirstChildOfClass("Humanoid")
-                    if h then h.PlatformStand = false end
+                    if h then
+                        h.AutoRotate = oldAutoRotate
+                        h.WalkSpeed = DesiredWalkSpeed
+                        h.JumpHeight = 16
+                    end
                 end
             end)
             if FlyConn then FlyConn:Disconnect() FlyConn = nil end
@@ -324,7 +316,8 @@ local function StartFly()
         local char = LocalPlayer.Character
         if not char then StopFly() return end
         local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then StopFly() return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hrp or not hum then StopFly() return end
 
         local cam = workspace.CurrentCamera
         local cf = cam.CFrame
@@ -338,11 +331,11 @@ local function StartFly()
         if UserInputService:GetKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
 
         if dir.Magnitude > 0 then
-            bv.Velocity = dir.Unit * FlySpeed
+            hrp.AssemblyLinearVelocity = dir.Unit * FlySpeed
         else
-            bv.Velocity = Vector3.new(0, 0, 0)
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         end
-        bg.CFrame = CFrame.new(hrp.Position, hrp.Position + cf.LookVector)
+        hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + cf.LookVector)
     end)
 end
 
