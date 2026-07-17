@@ -191,7 +191,31 @@ local function MakeWindow(sub, w, h, opts)
         ms.Thickness = 1.5
         ms.Transparency = 0.3
 
-        Drag(MiniFrame, MiniFrame)
+        local function DragWithFlag(frame, handle)
+            local c, d, s, f, moved
+            handle.InputBegan:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                    d = true; moved = false; s = i.Position; f = frame.Position
+                    if c then c:Disconnect() end
+                    c = UserInputService.InputChanged:Connect(function(i2)
+                        if d and (i2.UserInputType == Enum.UserInputType.MouseMovement or i2.UserInputType == Enum.UserInputType.Touch) then
+                            local dx = i2.Position.X - s.X
+                            local dy = i2.Position.Y - s.Y
+                            if math.abs(dx) > 2 or math.abs(dy) > 2 then moved = true end
+                            frame.Position = UDim2.new(f.X.Scale, f.X.Offset + dx, f.Y.Scale, f.Y.Offset + dy)
+                        end
+                    end)
+                end
+            end)
+            handle.InputEnded:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                    d = false; if c then c:Disconnect() c = nil end
+                end
+            end)
+            return function() return moved end
+        end
+
+        local getMoved = DragWithFlag(MiniFrame, MiniFrame)
 
         local minimized = false
         MinBtn.MouseButton1Click:Connect(function()
@@ -208,6 +232,7 @@ local function MakeWindow(sub, w, h, opts)
         end)
 
         MiniFrame.MouseButton1Click:Connect(function()
+            if getMoved() then return end
             minimized = false
             Main.Position = MiniFrame.Position
             Main.Visible = true
@@ -249,6 +274,9 @@ local ShowKeyWindow, ShowLoaderWindow
 ------------------------------------------------------------
 local UniActive = { fly = false, noclip = false, infjump = false }
 local FlySpeed = 80
+local DesiredWalkSpeed = 16
+local DesiredJumpPower = 50
+local WalkSpeedConn
 local FlyConn, NoclipConn, InfJumpConn
 
 local function StartFly()
@@ -261,26 +289,17 @@ local function StartFly()
     if not hrp or not hum then UniActive.fly = false return end
 
     hum.PlatformStand = true
-    hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
 
-    local bg = Instance.new("BodyGyro", hrp)
-    bg.P = 9e4
-    bg.D = 2000
-    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bg.CFrame = hrp.CFrame
+    local lastPos = hrp.Position
 
-    local bv = Instance.new("BodyVelocity", hrp)
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Velocity = Vector3.new(0, 0, 0)
-    bv.P = 1e4
-
-    FlyConn = RunService.RenderStepped:Connect(function()
+    FlyConn = RunService.RenderStepped:Connect(function(dt)
         if not UniActive.fly then
-            pcall(function() bg:Destroy() end)
-            pcall(function() bv:Destroy() end)
             pcall(function()
-                hum.PlatformStand = false
-                hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+                local c = LocalPlayer.Character
+                if c then
+                    local h = c:FindFirstChildOfClass("Humanoid")
+                    if h then h.PlatformStand = false end
+                end
             end)
             if FlyConn then FlyConn:Disconnect() FlyConn = nil end
             return
@@ -289,8 +308,7 @@ local function StartFly()
         local char = LocalPlayer.Character
         if not char then StopFly() return end
         local hrp = char:FindFirstChild("HumanoidRootPart")
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hrp or not hum then StopFly() return end
+        if not hrp then StopFly() return end
 
         local cam = workspace.CurrentCamera
         local cf = cam.CFrame
@@ -303,12 +321,12 @@ local function StartFly()
         if UserInputService:GetKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
         if UserInputService:GetKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
 
+        local targetPos = hrp.Position
         if dir.Magnitude > 0 then
-            bv.Velocity = dir.Unit * FlySpeed
-        else
-            bv.Velocity = Vector3.new(0, 0, 0)
+            targetPos = targetPos + dir.Unit * FlySpeed * dt
         end
-        bg.CFrame = cf
+        hrp.Velocity = Vector3.new(0, 0, 0)
+        hrp.CFrame = CFrame.new(targetPos, targetPos + cf.LookVector)
     end)
 end
 
@@ -532,13 +550,29 @@ local function OpenUniversalHub()
     MakeToggle(Panel, "Infinite Jump", 3, function() ToggleInfJump() end)
     MakeSlider(Panel, "Fly Speed", 4, 20, 200, 80, function(v) FlySpeed = v end)
     MakeSlider(Panel, "WalkSpeed", 5, 16, 200, 16, function(v)
+        DesiredWalkSpeed = v
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = v end
     end)
     MakeSlider(Panel, "JumpPower", 6, 50, 300, 50, function(v)
+        DesiredJumpPower = v
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if hum then hum.JumpPower = v end
     end)
+
+    if not WalkSpeedConn then
+        WalkSpeedConn = task.spawn(function()
+            while task.wait(0.5) do
+                pcall(function()
+                    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        if DesiredWalkSpeed ~= 16 then hum.WalkSpeed = DesiredWalkSpeed end
+                        if DesiredJumpPower ~= 50 then hum.JumpPower = DesiredJumpPower end
+                    end
+                end)
+            end
+        end)
+    end
 end
 
 ------------------------------------------------------------
