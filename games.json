@@ -1,0 +1,19 @@
+{
+  "games": [
+    {
+      "name": "Blox Fruits",
+      "file": "bloxfruits.lua",
+      "raw_url": "https://raw.githubusercontent.com/NiklasNK-Creator/Lunarscriptss/main/bloxfruits.lua"
+    },
+    {
+      "name": "King Legacy",
+      "file": "kinglegacy.lua",
+      "raw_url": "https://raw.githubusercontent.com/NiklasNK-Creator/Lunarscriptss/main/kinglegacy.lua"
+    },
+    {
+      "name": "Muscle Legends",
+      "file": "musclelegends.lua",
+      "raw_url": "https://raw.githubusercontent.com/NiklasNK-Creator/Lunarscriptss/main/musclelegends.lua"
+    }
+  ]
+}
