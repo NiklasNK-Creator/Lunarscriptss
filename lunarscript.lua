@@ -272,11 +272,11 @@ local ShowKeyWindow, ShowLoaderWindow
 ------------------------------------------------------------
 -- UNIVERSAL HUB
 ------------------------------------------------------------
-local UniActive = { fly = false, noclip = false, infjump = false }
+local UniActive = { fly = false, noclip = false, infjump = false, walkspeed = false }
 local FlySpeed = 80
 local DesiredWalkSpeed = 16
 local DesiredJumpPower = 50
-local WalkSpeedConn
+local WalkSpeedLoopConn
 local FlyConn, NoclipConn, InfJumpConn
 
 local function StartFly()
@@ -296,14 +296,16 @@ local function StartFly()
     flyPart.Transparency = 1
     flyPart.Anchored = true
     flyPart.CanCollide = false
+    flyPart.CFrame = hrp.CFrame
     flyPart.Parent = workspace
 
     local weld = Instance.new("Weld")
     weld.Name = "FlyWeld"
-    weld.Part0 = hrp
-    weld.Part1 = flyPart
+    weld.Part0 = flyPart
+    weld.Part1 = hrp
     weld.C0 = CFrame.new()
-    weld.Parent = hrp
+    weld.C1 = CFrame.new()
+    weld.Parent = flyPart
 
     FlyConn = RunService.Heartbeat:Connect(function()
         if not UniActive.fly then
@@ -381,6 +383,23 @@ local function ToggleInfJump()
                 local hum = char:FindFirstChildOfClass("Humanoid")
                 if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
             end
+        end)
+    end
+end
+
+local function ToggleWalkSpeed()
+    UniActive.walkspeed = not UniActive.walkspeed
+    if UniActive.walkspeed then
+        if WalkSpeedLoopConn then return end
+        WalkSpeedLoopConn = task.spawn(function()
+            while UniActive.walkspeed do
+                pcall(function()
+                    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then hum.WalkSpeed = DesiredWalkSpeed end
+                end)
+                task.wait(0.5)
+            end
+            WalkSpeedLoopConn = nil
         end)
     end
 end
@@ -565,26 +584,22 @@ local function OpenUniversalHub()
     MakeToggle(Panel, "NoClip", 2, function() ToggleNoclip() end)
     MakeToggle(Panel, "Infinite Jump", 3, function() ToggleInfJump() end)
     MakeSlider(Panel, "Fly Speed", 4, 20, 200, 80, function(v) FlySpeed = v end)
-    MakeSlider(Panel, "WalkSpeed", 5, 16, 200, 16, function(v)
+    MakeToggle(Panel, "WalkSpeed", 5, function() ToggleWalkSpeed() end)
+    MakeSlider(Panel, "WalkSpeed Value", 6, 16, 200, 16, function(v)
         DesiredWalkSpeed = v
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = v end
+        pcall(function()
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum and UniActive.walkspeed then hum.WalkSpeed = v end
+        end)
     end)
-    MakeSlider(Panel, "JumpPower", 6, 50, 300, 50, function(v)
+    MakeSlider(Panel, "JumpPower", 7, 50, 300, 50, function(v)
         DesiredJumpPower = v
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.JumpPower = v end
+        pcall(function()
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.JumpPower = v end
+        end)
     end)
-
-    if not WalkSpeedConn then
-        WalkSpeedConn = task.spawn(function()
-            while task.wait(0.01) do
-                pcall(function()
-                    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        if DesiredWalkSpeed ~= 16 then hum.WalkSpeed = DesiredWalkSpeed end
-                        if DesiredJumpPower ~= 50 then hum.JumpPower = DesiredJumpPower end
-                    end
+end
                 end)
             end
         end)
