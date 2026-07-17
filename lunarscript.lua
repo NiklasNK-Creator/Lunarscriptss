@@ -74,19 +74,6 @@ local function MakeWindow(sub, w, h, opts)
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     gui.Parent = game.CoreGui
 
-    local Shadow = Instance.new("ImageLabel")
-    Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    Shadow.Size = UDim2.new(1, 30, 1, 30)
-    Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Shadow.BackgroundTransparency = 1
-    Shadow.Image = "rbxassetid://6014261993"
-    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    Shadow.ImageTransparency = 0.88
-    Shadow.ScaleType = Enum.ScaleType.Slice
-    Shadow.SliceCenter = Rect.new(49, 49, 450, 450)
-    Shadow.ZIndex = 0
-    Shadow.Parent = gui
-
     local Main = Instance.new("Frame")
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.Size = UDim2.new(0, w, 0, h)
@@ -212,12 +199,10 @@ local function MakeWindow(sub, w, h, opts)
             if minimized then
                 MiniFrame.Position = Main.Position
                 Main.Visible = false
-                Shadow.Visible = false
                 MiniFrame.Visible = true
             else
                 Main.Position = MiniFrame.Position
                 Main.Visible = true
-                Shadow.Visible = true
                 MiniFrame.Visible = false
             end
         end)
@@ -226,7 +211,6 @@ local function MakeWindow(sub, w, h, opts)
             minimized = false
             Main.Position = MiniFrame.Position
             Main.Visible = true
-            Shadow.Visible = true
             MiniFrame.Visible = false
         end)
     end
@@ -277,37 +261,52 @@ local function StartFly()
     if not hrp or not hum then UniActive.fly = false return end
 
     hum.PlatformStand = true
+    hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
 
     local bg = Instance.new("BodyGyro", hrp)
     bg.P = 9e4
+    bg.D = 2000
     bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
     bg.CFrame = hrp.CFrame
 
     local bv = Instance.new("BodyVelocity", hrp)
-    bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Velocity = Vector3.new()
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.P = 1e4
 
     FlyConn = RunService.RenderStepped:Connect(function()
         if not UniActive.fly then
             pcall(function() bg:Destroy() end)
             pcall(function() bv:Destroy() end)
-            pcall(function() hum.PlatformStand = false end)
+            pcall(function()
+                hum.PlatformStand = false
+                hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+            end)
             if FlyConn then FlyConn:Disconnect() FlyConn = nil end
             return
         end
+
+        local char = LocalPlayer.Character
+        if not char then StopFly() return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hrp or not hum then StopFly() return end
+
         local cam = workspace.CurrentCamera
         local cf = cam.CFrame
-        local dir = Vector3.new()
+        local dir = Vector3.new(0, 0, 0)
+
         if UserInputService:GetKeyDown(Enum.KeyCode.W) then dir = dir + cf.LookVector end
         if UserInputService:GetKeyDown(Enum.KeyCode.S) then dir = dir - cf.LookVector end
         if UserInputService:GetKeyDown(Enum.KeyCode.D) then dir = dir + cf.RightVector end
         if UserInputService:GetKeyDown(Enum.KeyCode.A) then dir = dir - cf.RightVector end
         if UserInputService:GetKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
         if UserInputService:GetKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
+
         if dir.Magnitude > 0 then
             bv.Velocity = dir.Unit * FlySpeed
         else
-            bv.Velocity = Vector3.new()
+            bv.Velocity = Vector3.new(0, 0, 0)
         end
         bg.CFrame = cf
     end)
@@ -679,7 +678,7 @@ end
 ------------------------------------------------------------
 ShowLoaderWindow = function()
     CleanAll()
-    local gui, Main = MakeWindow("Select a hub", 360, 200, { showProfile = true, noClose = true })
+    local gui, Main = MakeWindow("Select a hub", 360, 200, { showProfile = true, noClose = true, minimizeLetter = "H" })
     LoaderGui = gui
 
     local Title = Instance.new("TextLabel")
