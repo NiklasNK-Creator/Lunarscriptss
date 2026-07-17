@@ -607,7 +607,9 @@ getgenv().MakeLabel = MakeLabel
 ------------------------------------------------------------
 -- EXTERNAL MODULES
 ------------------------------------------------------------
-local Modules = {}
+local Modules = {
+    { name = "Sab Hub", id = "sab", loader = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/NiklasNK-Creator/Lunarscriptss/main/SabHub.lua"))() end },
+}
 
 local function OpenModule(mod)
     mod.loader()
