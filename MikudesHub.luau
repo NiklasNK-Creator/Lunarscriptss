@@ -190,7 +190,7 @@ local closeBtn = Instance.new("TextButton")
 closeBtn.Name = "CloseBtn"
 closeBtn.Size = UDim2.new(0, 24, 0, 24); closeBtn.Position = UDim2.new(1, -34, 0, 4)
 closeBtn.BackgroundColor3 = Colors.error; closeBtn.Text = ""; closeBtn.BorderSizePixel = 0
-closeBtn.AutoButtonColor = false; closeBtn.ZIndex = 10; closeBtn.Parent = topBar
+closeBtn.AutoButtonColor = false; closeBtn.Active = true; closeBtn.ZIndex = 10; closeBtn.Parent = topBar
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
 
 local closeX = Instance.new("TextLabel")
@@ -203,7 +203,7 @@ local minBtn = Instance.new("TextButton")
 minBtn.Name = "MinBtn"
 minBtn.Size = UDim2.new(0, 24, 0, 24); minBtn.Position = UDim2.new(1, -62, 0, 4)
 minBtn.BackgroundColor3 = Colors.surfaceA; minBtn.Text = ""; minBtn.BorderSizePixel = 0
-minBtn.AutoButtonColor = false; minBtn.ZIndex = 10; minBtn.Parent = topBar
+minBtn.AutoButtonColor = false; minBtn.Active = true; minBtn.ZIndex = 10; minBtn.Parent = topBar
 Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
 local minIcon = Instance.new("Frame")
@@ -578,15 +578,16 @@ end)
 -- ═══════════════════════════════════════════════════════════
 
 do
-    local dragging, dragStart, startPos
+    local dragging, dragStart, startPos, dragActive
 
     topBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            dragActive = false
             dragStart = input.Position
             startPos = main.Position
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false; dragActive = false end
             end)
         end
     end)
@@ -594,7 +595,12 @@ do
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local d = input.Position - dragStart
-            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            if not dragActive and (math.abs(d.X) > 5 or math.abs(d.Y) > 5) then
+                dragActive = true
+            end
+            if dragActive then
+                main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            end
         end
     end)
 end
@@ -631,15 +637,16 @@ do
         line.BorderSizePixel = 0; line.ZIndex = 21; line.Parent = handle
     end
 
-    local resizing, resizeStart, startSize
+    local resizing, resizeStart, startSize, resizeActive
 
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             resizing = true
+            resizeActive = false
             resizeStart = input.Position
             startSize = main.Size
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then resizing = false end
+                if input.UserInputState == Enum.UserInputState.End then resizing = false; resizeActive = false end
             end)
         end
     end)
@@ -647,12 +654,17 @@ do
     UserInputService.InputChanged:Connect(function(input)
         if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local d = input.Position - resizeStart
-            local newW = math.clamp(startSize.X.Offset + d.X, MIN_W, MAX_W)
-            local newH = math.clamp(startSize.Y.Offset + d.Y, MIN_H, MAX_H)
-            main.Size = UDim2.new(0, newW, 0, newH)
-            curW = newW; curH = newH
-            content.Size = UDim2.new(1, 0, 1, -32)
-            body.CanvasSize = UDim2.new(0, 0, 0, bodyLayout.AbsoluteContentSize.Y + 20)
+            if not resizeActive and (math.abs(d.X) > 5 or math.abs(d.Y) > 5) then
+                resizeActive = true
+            end
+            if resizeActive then
+                local newW = math.clamp(startSize.X.Offset + d.X, MIN_W, MAX_W)
+                local newH = math.clamp(startSize.Y.Offset + d.Y, MIN_H, MAX_H)
+                main.Size = UDim2.new(0, newW, 0, newH)
+                curW = newW; curH = newH
+                content.Size = UDim2.new(1, 0, 1, -32)
+                body.CanvasSize = UDim2.new(0, 0, 0, bodyLayout.AbsoluteContentSize.Y + 20)
+            end
         end
     end)
 
