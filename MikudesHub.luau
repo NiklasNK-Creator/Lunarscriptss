@@ -303,7 +303,7 @@ end
 
 dcBtn.MouseEnter:Connect(function() TweenService:Create(dcBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(71, 82, 196)}):Play() end)
 dcBtn.MouseLeave:Connect(function() TweenService:Create(dcBtn, TweenInfo.new(0.15), {BackgroundColor3 = Colors.discord}):Play() end)
-dcBtn.MouseButton1Click:Connect(function()
+dcBtn.MouseButton1Down:Connect(function()
     setClip(DiscordInvite)
     pcall(function()
         if syn and syn.request then syn.request({Url = DiscordInvite, Method = "GET"})
@@ -363,7 +363,7 @@ getKeyT.TextSize = 13; getKeyT.Font = Enum.Font.GothamBold; getKeyT.Parent = get
 
 getKeyBtn.MouseEnter:Connect(function() TweenService:Create(getKeyBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(110, 180, 255)}):Play() end)
 getKeyBtn.MouseLeave:Connect(function() TweenService:Create(getKeyBtn, TweenInfo.new(0.15), {BackgroundColor3 = Colors.primary}):Play() end)
-getKeyBtn.MouseButton1Click:Connect(function()
+getKeyBtn.MouseButton1Down:Connect(function()
     setClip(KeyLink)
     getKeyT.Text = "Copied!"
     TweenService:Create(getKeyBtn, TweenInfo.new(0.1), {BackgroundColor3 = Colors.success}):Play()
@@ -458,7 +458,7 @@ local function doVerify()
     end
 end
 
-verifyBtn.MouseButton1Click:Connect(doVerify)
+verifyBtn.MouseButton1Down:Connect(doVerify)
 keyInput.FocusLost:Connect(function(ep) if ep then doVerify() end end)
 
 -- ═══════════════════════════════════════════════════════════
@@ -578,27 +578,35 @@ end)
 -- ═══════════════════════════════════════════════════════════
 
 do
-    local dragging, dragStart, startPos, dragActive
+    local dragZone = Instance.new("TextButton")
+    dragZone.Name = "DragZone"
+    dragZone.Size = UDim2.new(1, 0, 1, 0)
+    dragZone.BackgroundColor3 = Color3.new(0, 0, 0)
+    dragZone.BackgroundTransparency = 1
+    dragZone.Text = ""
+    dragZone.BorderSizePixel = 0
+    dragZone.ZIndex = 1
+    dragZone.AutoButtonColor = false
+    dragZone.Parent = topBar
 
-    topBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragActive = false
-            dragStart = input.Position
-            startPos = main.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false; dragActive = false end
-            end)
+    local dragging, dragStart, startPos
+
+    dragZone.MouseButton1Down:Connect(function()
+        dragging = true
+        dragStart = UserInputService:GetMouseLocation()
+        startPos = main.Position
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            dragging = false
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local d = input.Position - dragStart
-            if not dragActive and (math.abs(d.X) > 5 or math.abs(d.Y) > 5) then
-                dragActive = true
-            end
-            if dragActive then
+            if math.abs(d.X) > 2 or math.abs(d.Y) > 2 then
                 main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
             end
         end
@@ -679,7 +687,7 @@ end
 minBtn.MouseEnter:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.1), {BackgroundColor3 = Colors.txt3}):Play() end)
 minBtn.MouseLeave:Connect(function() TweenService:Create(minBtn, TweenInfo.new(0.1), {BackgroundColor3 = Colors.surfaceA}):Play() end)
 
-minBtn.MouseButton1Click:Connect(function()
+minBtn.MouseButton1Down:Connect(function()
     getgenv().UI_MINIMIZED = not getgenv().UI_MINIMIZED
     if getgenv().UI_MINIMIZED then
         TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
@@ -709,7 +717,7 @@ end)
 
 closeBtn.MouseEnter:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 90, 90)}):Play() end)
 closeBtn.MouseLeave:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.1), {BackgroundColor3 = Colors.error}):Play() end)
-closeBtn.MouseButton1Click:Connect(function()
+closeBtn.MouseButton1Down:Connect(function()
     getgenv().UI_CLOSED = true
     getgenv().UI_MINIMIZED = false
     TweenService:Create(main, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
